@@ -1,0 +1,9 @@
+apiVersion: 1
+
+# Dashboard provisioning - import dashboards from Grafana.com
+# Recommended dashboard IDs:
+#   - 19924: ASP.NET Core (OpenTelemetry)
+#   - 17706: .NET OpenTelemetry
+#   - 13639: Loki Logs
+#   - 16098: Node Exporter Full
+providers: []
