@@ -22,6 +22,37 @@ processors:
         from_attribute: host.name
         action: insert
 
+  # Tail sampling for 10-year storage: keep 10% of traces + all errors
+  # This reduces trace storage by ~90% while keeping important traces
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 100000
+    expected_new_traces_per_sec: 100
+    policies:
+      # Always keep traces with errors
+      - name: errors-policy
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      # Always keep slow traces (>2s)
+      - name: latency-policy
+        type: latency
+        latency:
+          threshold_ms: 2000
+      # Sample 10% of remaining traces
+      - name: probabilistic-policy
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+  # Filter to drop debug-level logs (optional, saves space)
+  filter/logs:
+    logs:
+      exclude:
+        match_type: regexp
+        bodies:
+          - ".*DEBUG.*"
+
 exporters:
   # Export traces to Tempo via OTLP gRPC
   otlp/tempo:
@@ -50,7 +81,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch, resource]
+      processors: [memory_limiter, tail_sampling, batch, resource]
       exporters: [otlp/tempo]
 
     metrics:
@@ -60,7 +91,7 @@ service:
 
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, batch, resource]
+      processors: [memory_limiter, filter/logs, batch, resource]
       exporters: [otlphttp/loki]
 
   telemetry:
