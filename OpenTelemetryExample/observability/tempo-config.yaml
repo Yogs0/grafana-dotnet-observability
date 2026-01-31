@@ -15,7 +15,11 @@ ingester:
 
 compactor:
   compaction:
-    block_retention: 1h
+    block_retention: 72h  # Keep traces for 3 days
+
+# Limit memory usage
+query_frontend:
+  max_retries: 2
 
 storage:
   trace:
@@ -24,3 +28,8 @@ storage:
       path: /tmp/tempo/wal
     local:
       path: /tmp/tempo/blocks
+    # Block configuration for efficient storage
+    block:
+      bloom_filter_false_positive: 0.05
+      v2_index_downsample_bytes: 1000
+      v2_encoding: zstd  # Compression to save space

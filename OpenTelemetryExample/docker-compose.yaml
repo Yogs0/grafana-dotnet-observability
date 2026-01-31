@@ -52,6 +52,9 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=3d'      # Keep metrics for 3 days
+      - '--storage.tsdb.retention.size=1GB'     # Max 1GB storage
+      - '--storage.tsdb.wal-compression'        # Compress WAL to save space
       - '--web.enable-lifecycle'
       - '--web.enable-remote-write-receiver'
     volumes:
