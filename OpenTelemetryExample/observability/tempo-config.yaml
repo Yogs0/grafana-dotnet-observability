@@ -11,11 +11,29 @@ distributor:
           endpoint: 0.0.0.0:4318
 
 ingester:
-  max_block_duration: 5m
+  max_block_duration: 30m           # Larger blocks for better compression
+  max_block_bytes: 104857600        # 100MB max block size
 
 compactor:
   compaction:
-    block_retention: 1h
+    block_retention: 87600h         # 10 years retention
+    compacted_block_retention: 1h
+    compaction_window: 4h           # Larger window for better compaction
+
+# Limit memory usage
+query_frontend:
+  max_retries: 2
+
+# Metrics generator for service graphs (optional, uses minimal space)
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+  storage:
+    path: /tmp/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
 
 storage:
   trace:
@@ -24,3 +42,16 @@ storage:
       path: /tmp/tempo/wal
     local:
       path: /tmp/tempo/blocks
+    # Block configuration for efficient storage
+    block:
+      bloom_filter_false_positive: 0.05
+      v2_index_downsample_bytes: 1000
+      v2_encoding: zstd              # Best compression for long-term
+
+# Global overrides (Tempo 2.x format)
+overrides:
+  ingestion_rate_strategy: local_user
+  ingestion_rate_limit_bytes: 5000000      # 5MB/s max ingestion
+  ingestion_burst_size_bytes: 10000000     # 10MB burst
+  max_bytes_per_trace: 500000              # 500KB max per trace
+  max_traces_per_user: 0                   # unlimited

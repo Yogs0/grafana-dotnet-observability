@@ -3,6 +3,7 @@ auth_enabled: false
 server:
   http_listen_port: 3100
   grpc_listen_port: 9096
+  grpc_server_max_recv_msg_size: 8388608  # 8MB
 
 common:
   instance_addr: 127.0.0.1
@@ -15,6 +16,14 @@ common:
   ring:
     kvstore:
       store: inmemory
+
+# Ingester settings for efficient storage
+ingester:
+  chunk_encoding: snappy          # Fast compression
+  chunk_target_size: 1572864      # 1.5MB chunks for better compression
+  chunk_idle_period: 30m
+  max_chunk_age: 2h
+  flush_check_period: 5m
 
 query_range:
   results_cache:
@@ -36,11 +45,24 @@ schema_config:
 ruler:
   alertmanager_url: http://localhost:9093
 
+# Compactor for automatic retention cleanup
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  delete_request_store: filesystem
+
 limits_config:
   reject_old_samples: true
-  reject_old_samples_max_age: 168h
-  ingestion_rate_mb: 16
-  ingestion_burst_size_mb: 32
+  reject_old_samples_max_age: 8760h       # Accept samples up to 1 year old
+  ingestion_rate_mb: 4                     # Lower rate to control growth
+  ingestion_burst_size_mb: 8
+  retention_period: 87600h                 # 10 years (10 * 365 * 24h)
+  max_query_parallelism: 16
+  max_streams_per_user: 10000
+  max_line_size: 256KB                     # Limit log line size
 
 analytics:
   reporting_enabled: false
